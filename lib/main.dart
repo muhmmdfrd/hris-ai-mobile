@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hris_ai/modules/auth/auth_screen.dart';
+import 'package:hris_ai/modules/feedback/feedback_screen.dart';
 import 'package:hris_ai/modules/home/home_screen.dart';
 
 void main() {
@@ -15,7 +16,11 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       initialRoute: '/home',
-      routes: {'/auth': (context) => const AuthScreen(), '/home': (context) => const HomeScreen()},
+      routes: {
+        '/auth': (context) => const AuthScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/feedback': (context) => FeedbackScreen(),
+      },
     );
   }
 }
