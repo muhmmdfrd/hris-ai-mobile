@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hris_ai/modules/maps/maps_screen.dart';
 import 'package:jiffy/jiffy.dart';
 
 class MainScreen extends StatelessWidget {
@@ -6,23 +7,21 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = Jiffy.parse('2025-06-02'); // kamu bisa sesuaikan ke Jiffy.now()
+    final today = Jiffy.now();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Absensi'),
+        title: const Text('Absensi', style: TextStyle(color: Colors.white)),
+        centerTitle: true,
         backgroundColor: Colors.deepPurple,
-        leading: const BackButton(color: Colors.white),
-        actions: const [
-          Padding(padding: EdgeInsets.only(right: 16.0), child: Icon(Icons.assignment_turned_in, color: Colors.white)),
-        ],
       ),
-      body: Column(children: [_buildTodayCard(today)]),
+      body: Column(children: [_buildTodayCard(today, context)]),
     );
   }
 
-  Widget _buildTodayCard(Jiffy today) {
+  Widget _buildTodayCard(Jiffy today, BuildContext context) {
     final formattedDay = today.format(pattern: 'EEEE, dd MMMM yyyy');
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -32,34 +31,71 @@ class MainScreen extends StatelessWidget {
         color: Colors.white,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(formattedDay, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const Text('08:00 - 17:00', style: TextStyle(fontSize: 14, color: Colors.grey)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              const Text('Masuk', style: TextStyle(color: Colors.green)),
-              const Text('07:25', style: TextStyle(color: Colors.black)),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: handle check-out
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Keluar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              // Tombol Masuk
+              Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MapsScreen(title: 'Absen Masuk')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Icon(Icons.login, size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('07:25', style: TextStyle(fontSize: 14, color: Colors.black)),
+                ],
+              ),
+
+              // Tombol Keluar
+              Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MapsScreen(title: 'Absen Keluar')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Icon(Icons.logout, size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Belum keluar', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text('Durasi kehadiran', style: TextStyle(fontSize: 14)),
-          const SizedBox(height: 4),
-          const Text('03 : 00', style: TextStyle(fontSize: 32, color: Colors.green, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 32),
+          const Center(
+            child: Column(
+              children: [
+                Text('Durasi kehadiran', style: TextStyle(fontSize: 14)),
+                SizedBox(height: 4),
+                Text('03 : 00', style: TextStyle(fontSize: 32, color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
         ],
       ),
     );

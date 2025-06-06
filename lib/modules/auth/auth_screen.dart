@@ -30,7 +30,7 @@ class _AuthFormState extends State<AuthForm> {
     final username = _usernameController.text;
     final password = _passwordController.text;
 
-    context.read<AuthBloc>().add(LoginSubmitted(username: username, password: password));
+    context.read<AuthBloc>().add(LoginSubmitted(email: username, password: password));
   }
 
   @override
@@ -73,7 +73,7 @@ class _AuthFormState extends State<AuthForm> {
                   controller: _usernameController,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.person),
-                    labelText: 'Username',
+                    labelText: 'Email',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     filled: true,
                     fillColor: Colors.white,
