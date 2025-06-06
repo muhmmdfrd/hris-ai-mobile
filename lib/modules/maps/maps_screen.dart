@@ -1,8 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hris_ai/http/api_client.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class MapsScreen extends StatefulWidget {
   final String title;
@@ -15,10 +21,11 @@ class MapsScreen extends StatefulWidget {
 
 class _MapsScreenState extends State<MapsScreen> {
   LatLng? _currentLocation;
-  // -6.267309422089223, 106.82337488468106
-  final LatLng _officeLocation = LatLng(-6.2666, 106.8169);
+  final LatLng _officeLocation = LatLng(-6.267309422089223, 106.82337488468106);
   final double _radiusInMeter = 100.0;
   bool _isInRadius = false;
+  bool _isSubmitting = false;
+  File? _pickedImage;
 
   @override
   void initState() {
@@ -57,6 +64,21 @@ class _MapsScreenState extends State<MapsScreen> {
       _currentLocation = current;
       _isInRadius = distance <= _radiusInMeter;
     });
+  }
+
+  Future<void> _ambilFoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 40,
+    );
+
+    if (picked != null) {
+      setState(() {
+        _pickedImage = File(picked.path);
+      });
+    }
   }
 
   @override
@@ -105,8 +127,6 @@ class _MapsScreenState extends State<MapsScreen> {
                       ),
                     ],
                   ),
-
-                  // CARD AT BOTTOM
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Container(
@@ -121,14 +141,20 @@ class _MapsScreenState extends State<MapsScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.camera_alt, size: 48, color: Colors.grey),
-                              SizedBox(width: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child:
+                                    _pickedImage == null
+                                        ? const Icon(Icons.camera_alt, size: 48, color: Colors.grey)
+                                        : Image.file(_pickedImage!, width: 48, height: 48, fit: BoxFit.cover),
+                              ),
+                              const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  const Text(
                                     'Absen Masuk',
                                     style: TextStyle(
                                       fontSize: 18,
@@ -136,19 +162,12 @@ class _MapsScreenState extends State<MapsScreen> {
                                       color: Colors.deepPurple,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
-                                  Text('Tanggal dan jam', style: TextStyle(fontSize: 14)),
+                                  const SizedBox(height: 4),
+                                  Text(dateFormatted, style: const TextStyle(fontSize: 14)),
                                 ],
                               ),
-                              Spacer(),
-                              Icon(Icons.notes, color: Colors.grey),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const SizedBox(width: 60),
-                              Text(dateFormatted, style: const TextStyle(fontSize: 14, color: Colors.black)),
+                              const Spacer(),
+                              const Icon(Icons.notes, color: Colors.grey),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -164,13 +183,70 @@ class _MapsScreenState extends State<MapsScreen> {
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed:
-                                  _isInRadius
-                                      ? () {
-                                        // TODO: Ambil Foto
+                                  (_isInRadius && !_isSubmitting)
+                                      ? () async {
+                                        if (_pickedImage == null) {
+                                          await _ambilFoto();
+                                        } else {
+                                          setState(() {
+                                            _isSubmitting = true;
+                                          });
+
+                                          final bytes = await _pickedImage!.readAsBytes();
+                                          final base64Photo = base64Encode(bytes);
+
+                                          final requestBody = {
+                                            'location_latitude': _currentLocation?.latitude,
+                                            'location_longitude': _currentLocation?.longitude,
+                                            'photo': base64Photo,
+                                          };
+
+                                          try {
+                                            final response = await ApiClient().dio.post(
+                                              '/attendance/check-in',
+                                              data: requestBody,
+                                            );
+
+                                            if (response.statusCode == 201) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(const SnackBar(content: Text("Absen berhasil dikirim.")));
+                                              setState(() {
+                                                _pickedImage = null;
+                                              });
+                                              Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text("Gagal absen: ${response.statusMessage}")),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e")));
+                                          } finally {
+                                            setState(() {
+                                              _isSubmitting = false;
+                                            });
+                                          }
+                                        }
                                       }
                                       : null,
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('Ambil foto'),
+                              icon:
+                                  _isSubmitting
+                                      ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                      )
+                                      : Icon(_pickedImage == null ? Icons.camera_alt : Icons.send),
+                              label: Text(
+                                _pickedImage == null
+                                    ? 'Ambil foto'
+                                    : _isSubmitting
+                                    ? 'Mengirim...'
+                                    : 'Kirim absen',
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.deepPurple,
                                 foregroundColor: Colors.white,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hris_ai/http/api_client.dart';
 import 'package:hris_ai/modules/maps/maps_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hris_ai/modules/auth/auth_screen.dart';
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Flutter Demo',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       initialRoute: initialRoute,

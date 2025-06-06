@@ -4,8 +4,8 @@
     <!-- PERMISSION UNTUK LOKASI -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Optional: Jika nanti ingin akses lokasi di background -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
         android:label="hris_ai"

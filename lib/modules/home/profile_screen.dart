@@ -6,7 +6,11 @@ class ProfilScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil'), backgroundColor: Colors.deepPurple),
+      appBar: AppBar(
+        title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple,
+      ),
       body: ListView(
         children: [
           ListTile(
@@ -14,7 +18,7 @@ class ProfilScreen extends StatelessWidget {
             title: const Text('Isi Feedback'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              // TODO: Navigasi ke form feedback
+              Navigator.pushNamed(context, '/feedback');
             },
           ),
         ],
