@@ -72,7 +72,7 @@ class _AuthFormState extends State<AuthForm> {
                 TextField(
                   controller: _usernameController,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.person),
+                    prefixIcon: const Icon(Icons.email),
                     labelText: 'Email',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     filled: true,

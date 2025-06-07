@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,7 +7,6 @@ import 'package:hris_ai/http/api_client.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class MapsScreen extends StatefulWidget {
   final String title;
@@ -154,8 +152,8 @@ class _MapsScreenState extends State<MapsScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Absen Masuk',
+                                  Text(
+                                    widget.title,
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -201,13 +199,15 @@ class _MapsScreenState extends State<MapsScreen> {
                                             'photo': base64Photo,
                                           };
 
-                                          try {
-                                            final response = await ApiClient().dio.post(
-                                              '/attendance/check-in',
-                                              data: requestBody,
-                                            );
+                                          var url =
+                                              widget.title.toLowerCase() == 'absen keluar'
+                                                  ? '/attendance/check-out'
+                                                  : '/attendance/check-in';
 
-                                            if (response.statusCode == 201) {
+                                          try {
+                                            final response = await ApiClient().dio.post(url, data: requestBody);
+
+                                            if (response.statusCode == 201 || response.statusCode == 200) {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(const SnackBar(content: Text("Absen berhasil dikirim.")));
