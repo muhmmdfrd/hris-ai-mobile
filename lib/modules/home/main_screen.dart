@@ -1,5 +1,7 @@
+// Tambahkan import
 import 'package:flutter/material.dart';
 import 'package:hris_ai/http/api_client.dart';
+import 'package:hris_ai/modules/home/chart_sentiment.dart';
 import 'package:hris_ai/modules/maps/maps_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
@@ -47,13 +49,11 @@ class _MainScreenState extends State<MainScreen> {
           final checkInTime = todayData['check_in_time'];
           final checkOutTime = todayData['check_out_time'];
 
-          // Ubah ke lokal (WIB)
           localCheckIn = _formatToLocalTime(date, checkInTime);
           if (checkOutTime != null) {
             localCheckOut = _formatToLocalTime(date, checkOutTime);
           }
 
-          // Hitung durasi
           final checkInDateTime = DateTime.parse('$date $checkInTime').add(const Duration(hours: 7));
           final now = DateTime.now();
 
@@ -82,7 +82,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  /// Format durasi ke "HH:mm"
   String _formatDuration(Duration duration) {
     final hours = duration.inHours.toString().padLeft(2, '0');
     final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
@@ -92,19 +91,46 @@ class _MainScreenState extends State<MainScreen> {
   String _formatToLocalTime(String date, String time) {
     try {
       final input = DateTime.parse('$date $time');
-      final wib = input.add(const Duration(hours: 7)); // Tambah 7 jam (WIB)
-      return DateFormat.Hm().format(wib); // Format ke "HH:mm"
+      final wib = input.add(const Duration(hours: 7));
+      return DateFormat.Hm().format(wib);
     } catch (e) {
       return '--:--';
     }
   }
 
-  Future<void> _navigateAndRefresh(Widget page) async {
+  Future<void> _navigateAndRefresh(Widget page, String? value) async {
+    if (value != null) {
+      return;
+    }
+
     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
-    // Jika dari MapsScreen kembali, refresh data
     if (result == true) {
       _loadTodayAttendance();
     }
+  }
+
+  Widget _buildMenu(String title, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        margin: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.deepPurple.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.deepPurple.shade100),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28, color: Colors.deepPurple),
+            const SizedBox(height: 8),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -126,6 +152,7 @@ class _MainScreenState extends State<MainScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
+                    // Card Absensi
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -146,10 +173,7 @@ class _MainScreenState extends State<MainScreen> {
                                 children: [
                                   ElevatedButton(
                                     onPressed:
-                                        () =>
-                                            checkIn != null
-                                                ? null
-                                                : _navigateAndRefresh(const MapsScreen(title: 'Absen Masuk')),
+                                        () => _navigateAndRefresh(const MapsScreen(title: 'Absen Masuk'), checkIn),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
                                       foregroundColor: Colors.white,
@@ -159,17 +183,14 @@ class _MainScreenState extends State<MainScreen> {
                                     child: const Icon(Icons.login, size: 28, color: Colors.white),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(checkIn ?? '--:--', style: const TextStyle(fontSize: 14, color: Colors.black)),
+                                  Text(checkIn ?? '--:--', style: const TextStyle(fontSize: 14)),
                                 ],
                               ),
                               Column(
                                 children: [
                                   ElevatedButton(
                                     onPressed:
-                                        () =>
-                                            checkOut != null
-                                                ? null
-                                                : _navigateAndRefresh(const MapsScreen(title: 'Absen Keluar')),
+                                        () => _navigateAndRefresh(const MapsScreen(title: 'Absen Keluar'), checkOut),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
                                       foregroundColor: Colors.white,
@@ -179,7 +200,7 @@ class _MainScreenState extends State<MainScreen> {
                                     child: const Icon(Icons.logout, size: 28, color: Colors.white),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(checkOut ?? 'Belum keluar', style: TextStyle(fontSize: 14, color: Colors.black)),
+                                  Text(checkOut ?? 'Belum keluar', style: const TextStyle(fontSize: 14)),
                                 ],
                               ),
                             ],
@@ -204,6 +225,24 @@ class _MainScreenState extends State<MainScreen> {
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // Menu Tambahan
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      runSpacing: 12,
+                      children: [
+                        _buildMenu('Cuti', Icons.event_available, () {}),
+                        _buildMenu('Izin', Icons.assignment_turned_in, () {}),
+                        _buildMenu('Tugas di Luar', Icons.directions_run, () {}),
+                        _buildMenu('Masuk Libur', Icons.work_history, () {}),
+                        _buildMenu('Lembur', Icons.timer, () {}),
+                        _buildMenu('Kalender Kerja', Icons.calendar_today, () {}),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    SentimentChartCard(positive: 12, neutral: 5, negative: 3),
                   ],
                 ),
               ),
