@@ -183,7 +183,7 @@ class _MainScreenState extends State<MainScreen> {
                                     child: const Icon(Icons.login, size: 28, color: Colors.white),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(checkIn ?? '--:--', style: const TextStyle(fontSize: 14)),
+                                  Text(checkOut ?? 'Belum Masuk', style: const TextStyle(fontSize: 14)),
                                 ],
                               ),
                               Column(
