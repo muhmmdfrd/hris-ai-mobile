@@ -75,7 +75,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 _buildMenuItem(icon: Icons.lock_outline, label: 'Ubah password', onTap: () {}),
                 _buildMenuItem(icon: Icons.pin_outlined, label: 'Ubah PIN', onTap: () {}),
                 _buildMenuItem(
-                  icon: Icons.pin_outlined,
+                  icon: Icons.star,
                   label: 'Kirim Feedback',
                   onTap: () {
                     Navigator.pushNamed(context, '/feedback');
