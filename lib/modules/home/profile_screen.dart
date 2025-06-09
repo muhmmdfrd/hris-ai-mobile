@@ -74,6 +74,13 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 _buildMenuItem(icon: Icons.insert_drive_file_outlined, label: 'File saya', onTap: () {}),
                 _buildMenuItem(icon: Icons.lock_outline, label: 'Ubah password', onTap: () {}),
                 _buildMenuItem(icon: Icons.pin_outlined, label: 'Ubah PIN', onTap: () {}),
+                _buildMenuItem(
+                  icon: Icons.pin_outlined,
+                  label: 'Kirim Feedback',
+                  onTap: () {
+                    Navigator.pushNamed(context, '/feedback');
+                  },
+                ),
                 const Divider(),
                 _buildMenuItem(
                   icon: Icons.logout,
