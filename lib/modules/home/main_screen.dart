@@ -1,4 +1,3 @@
-// Tambahkan import
 import 'package:flutter/material.dart';
 import 'package:hris_ai/http/api_client.dart';
 import 'package:hris_ai/modules/home/chart_sentiment.dart';
@@ -19,10 +18,15 @@ class _MainScreenState extends State<MainScreen> {
   String? duration;
   bool isLoading = true;
 
+  int sentimentPositive = 0;
+  int sentimentNeutral = 0;
+  int sentimentNegative = 0;
+
   @override
   void initState() {
     super.initState();
     _loadTodayAttendance();
+    _loadSentimentCount();
   }
 
   Future<void> _loadTodayAttendance() async {
@@ -82,6 +86,21 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  Future<void> _loadSentimentCount() async {
+    try {
+      final response = await ApiClient().dio.get('/feedback/sentiment-count');
+      if (response.statusCode == 200 && response.data != null) {
+        setState(() {
+          sentimentPositive = response.data['positive'] ?? 0;
+          sentimentNeutral = response.data['neutral'] ?? 0;
+          sentimentNegative = response.data['negative'] ?? 0;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memuat data sentimen: $e')));
+    }
+  }
+
   String _formatDuration(Duration duration) {
     final hours = duration.inHours.toString().padLeft(2, '0');
     final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
@@ -99,9 +118,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _navigateAndRefresh(Widget page, String? value) async {
-    if (value != null) {
-      return;
-    }
+    if (value != null) return;
 
     final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
     if (result == true) {
@@ -148,86 +165,16 @@ class _MainScreenState extends State<MainScreen> {
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
-                onRefresh: _loadTodayAttendance,
+                onRefresh: () async {
+                  await _loadTodayAttendance();
+                  await _loadSentimentCount();
+                },
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
                     // Card Absensi
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.white,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(formattedDay, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          const Text('08:00 - 17:00', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                          const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Column(
-                                children: [
-                                  ElevatedButton(
-                                    onPressed:
-                                        () => _navigateAndRefresh(const MapsScreen(title: 'Absen Masuk'), checkIn),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.all(20),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    child: const Icon(Icons.login, size: 28, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(checkOut ?? 'Belum Masuk', style: const TextStyle(fontSize: 14)),
-                                ],
-                              ),
-                              Column(
-                                children: [
-                                  ElevatedButton(
-                                    onPressed:
-                                        () => _navigateAndRefresh(const MapsScreen(title: 'Absen Keluar'), checkOut),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.all(20),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    child: const Icon(Icons.logout, size: 28, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(checkOut ?? 'Belum keluar', style: const TextStyle(fontSize: 14)),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 32),
-                          Center(
-                            child: Column(
-                              children: [
-                                const Text('Durasi kehadiran', style: TextStyle(fontSize: 14)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  duration ?? '-- : --',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    color: Colors.deepPurple,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
+                    _buildAttendanceCard(formattedDay),
                     const SizedBox(height: 16),
-
                     // Menu Tambahan
                     Wrap(
                       alignment: WrapAlignment.spaceBetween,
@@ -242,10 +189,84 @@ class _MainScreenState extends State<MainScreen> {
                       ],
                     ),
                     const SizedBox(height: 32),
-                    SentimentChartCard(positive: 12, neutral: 5, negative: 3),
+                    // Sentimen
+                    SentimentChartCard(
+                      positive: sentimentPositive,
+                      neutral: sentimentNeutral,
+                      negative: sentimentNegative,
+                    ),
                   ],
                 ),
               ),
+    );
+  }
+
+  Widget _buildAttendanceCard(String formattedDay) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(formattedDay, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('08:00 - 17:00', style: TextStyle(fontSize: 14, color: Colors.grey)),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _navigateAndRefresh(const MapsScreen(title: 'Absen Masuk'), checkIn),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Icon(Icons.login, size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(checkIn ?? 'Belum Masuk', style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+              Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _navigateAndRefresh(const MapsScreen(title: 'Absen Keluar'), checkOut),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Icon(Icons.logout, size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(checkOut ?? 'Belum Keluar', style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Center(
+            child: Column(
+              children: [
+                const Text('Durasi kehadiran', style: TextStyle(fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(
+                  duration ?? '-- : --',
+                  style: const TextStyle(fontSize: 32, color: Colors.deepPurple, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

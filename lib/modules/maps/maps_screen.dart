@@ -19,8 +19,8 @@ class MapsScreen extends StatefulWidget {
 
 class _MapsScreenState extends State<MapsScreen> {
   LatLng? _currentLocation;
-  final LatLng _officeLocation = LatLng(-6.267309422089223, 106.82337488468106);
-  final double _radiusInMeter = 100.0;
+  LatLng? _officeLocation;
+  double _radiusInMeter = 100.0;
   bool _isInRadius = false;
   bool _isSubmitting = false;
   File? _pickedImage;
@@ -28,20 +28,37 @@ class _MapsScreenState extends State<MapsScreen> {
   @override
   void initState() {
     super.initState();
-    _determinePosition();
+    _loadOfficeLocation();
+  }
+
+  Future<void> _loadOfficeLocation() async {
+    try {
+      final response = await ApiClient().dio.get('/office-location');
+      if (response.statusCode == 200 && response.data != null) {
+        final lat = double.tryParse(response.data['latitude'].toString()) ?? 0.0;
+        final lng = double.tryParse(response.data['longitude'].toString()) ?? 0.0;
+        final radius = double.tryParse(response.data['radius'].toString()) ?? 100.0;
+
+        setState(() {
+          _officeLocation = LatLng(lat, lng);
+          _radiusInMeter = radius;
+        });
+
+        _determinePosition();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memuat lokasi kantor: $e')));
+    }
   }
 
   Future<void> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       await Geolocator.openLocationSettings();
       return;
     }
 
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
@@ -51,11 +68,12 @@ class _MapsScreenState extends State<MapsScreen> {
 
     final pos = await Geolocator.getCurrentPosition();
     final current = LatLng(pos.latitude, pos.longitude);
+
     final distance = Geolocator.distanceBetween(
       current.latitude,
       current.longitude,
-      _officeLocation.latitude,
-      _officeLocation.longitude,
+      _officeLocation?.latitude ?? 0.0,
+      _officeLocation?.longitude ?? 0.0,
     );
 
     setState(() {
@@ -87,7 +105,7 @@ class _MapsScreenState extends State<MapsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.title), backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
       body:
-          _currentLocation == null
+          (_currentLocation == null || _officeLocation == null)
               ? const Center(child: CircularProgressIndicator())
               : Stack(
                 children: [
@@ -98,7 +116,7 @@ class _MapsScreenState extends State<MapsScreen> {
                       MarkerLayer(
                         markers: [
                           Marker(
-                            point: _officeLocation,
+                            point: _officeLocation!,
                             width: 40,
                             height: 40,
                             child: const Icon(Icons.location_city, size: 36, color: Colors.deepPurple),
@@ -114,7 +132,7 @@ class _MapsScreenState extends State<MapsScreen> {
                       CircleLayer(
                         circles: [
                           CircleMarker(
-                            point: _officeLocation,
+                            point: _officeLocation!,
                             radius: _radiusInMeter,
                             color: Colors.deepPurple.withOpacity(0.2),
                             borderStrokeWidth: 2,
@@ -154,7 +172,7 @@ class _MapsScreenState extends State<MapsScreen> {
                                 children: [
                                   Text(
                                     widget.title,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.deepPurple,
@@ -199,14 +217,13 @@ class _MapsScreenState extends State<MapsScreen> {
                                             'photo': base64Photo,
                                           };
 
-                                          var url =
+                                          final url =
                                               widget.title.toLowerCase() == 'absen keluar'
                                                   ? '/attendance/check-out'
                                                   : '/attendance/check-in';
 
                                           try {
                                             final response = await ApiClient().dio.post(url, data: requestBody);
-
                                             if (response.statusCode == 201 || response.statusCode == 200) {
                                               ScaffoldMessenger.of(
                                                 context,
